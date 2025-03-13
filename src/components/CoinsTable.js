@@ -18,7 +18,7 @@ import {
 } from "@material-ui/core";
 import axios from "axios";
 import { CoinList } from "../config/api";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { CryptoState } from "../CryptoContext";
 
 export function numberWithCommas(x) {
@@ -50,7 +50,7 @@ export default function CoinsTable() {
   });
 
   const classes = useStyles();
-  const history = useHistory();
+  const history = useNavigate();
 
   const darkTheme = createTheme({
     palette: {
@@ -128,7 +128,7 @@ export default function CoinsTable() {
                     const profit = row.price_change_percentage_24h > 0;
                     return (
                       <TableRow
-                        onClick={() => history.push(`/coins/${row.id}`)}
+                        onClick={() => history(`/coins/${row.id}`)}
                         className={classes.row}
                         key={row.name}
                       >

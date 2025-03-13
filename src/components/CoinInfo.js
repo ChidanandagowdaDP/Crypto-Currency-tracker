@@ -1,6 +1,14 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { HistoricalChart } from "../config/api";
+import {
+  Chart as ChartJS,
+  LineElement,
+  PointElement,
+  LinearScale,
+  TimeScale,
+  CategoryScale,
+} from "chart.js";
 import { Line } from "react-chartjs-2";
 import {
   CircularProgress,
@@ -12,44 +20,60 @@ import SelectButton from "./SelectButton";
 import { chartDays } from "../config/data";
 import { CryptoState } from "../CryptoContext";
 
+// ✅ Register Chart.js components
+ChartJS.register(
+  LineElement,
+  PointElement,
+  LinearScale,
+  TimeScale,
+  CategoryScale
+);
+
+const useStyles = makeStyles((theme) => ({
+  container: {
+    width: "75%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 25,
+    padding: 40,
+    [theme.breakpoints.down("md")]: {
+      width: "100%",
+      marginTop: 0,
+      padding: 20,
+      paddingTop: 0,
+    },
+  },
+}));
+
 const CoinInfo = ({ coin }) => {
-  const [historicData, setHistoricData] = useState();
+  const [historicData, setHistoricData] = useState([]);
   const [days, setDays] = useState(1);
   const { currency } = CryptoState();
-  const [flag,setflag] = useState(false);
-
-  const useStyles = makeStyles((theme) => ({
-    container: {
-      width: "75%",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      marginTop: 25,
-      padding: 40,
-      [theme.breakpoints.down("md")]: {
-        width: "100%",
-        marginTop: 0,
-        padding: 20,
-        paddingTop: 0,
-      },
-    },
-  }));
+  const [loading, setLoading] = useState(true); // ✅ Added loading state
 
   const classes = useStyles();
 
+  // ✅ Improved fetch function with error handling
   const fetchHistoricData = async () => {
-    const { data } = await axios.get(HistoricalChart(coin.id, days, currency));
-    setflag(true);
-    setHistoricData(data.prices);
+    try {
+      setLoading(true);
+      const { data } = await axios.get(
+        HistoricalChart(coin.id, days, currency)
+      );
+      setHistoricData(data.prices);
+    } catch (error) {
+      console.error("Error fetching historical data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  console.log(coin);
 
   useEffect(() => {
     fetchHistoricData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [days]);
+  }, [days, currency]); // ✅ Added currency as a dependency
 
   const darkTheme = createTheme({
     palette: {
@@ -63,7 +87,7 @@ const CoinInfo = ({ coin }) => {
   return (
     <ThemeProvider theme={darkTheme}>
       <div className={classes.container}>
-        {!historicData | flag===false ? (
+        {loading ? (
           <CircularProgress
             style={{ color: "gold" }}
             size={250}
@@ -92,9 +116,7 @@ const CoinInfo = ({ coin }) => {
               }}
               options={{
                 elements: {
-                  point: {
-                    radius: 1,
-                  },
+                  point: { radius: 1 },
                 },
               }}
             />
@@ -109,8 +131,9 @@ const CoinInfo = ({ coin }) => {
               {chartDays.map((day) => (
                 <SelectButton
                   key={day.value}
-                  onClick={() => {setDays(day.value);
-                    setflag(false);
+                  onClick={() => {
+                    setDays(day.value);
+                    setLoading(true);
                   }}
                   selected={day.value === days}
                 >
